@@ -47,7 +47,8 @@ def upload_view(request):
             # Return JSON response for AJAX
             return JsonResponse({
                 'result': result['prediction'],
-                'confidence': result.get('confidence', 0),
+                'confidence': result['confidence'],
+                # 'confidence': result.get('confidence', 0),
                 'probabilities': result.get('probabilities', {}),
                 'image_url': skin_image.image.url
             })
