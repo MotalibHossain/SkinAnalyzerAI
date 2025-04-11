@@ -4,6 +4,9 @@ from . import views
 from django.conf import settings
 from django.conf.urls.static import static
 
+app_name='ML_Models'
+
 urlpatterns = [
     path('',views.index, name='Home'),
+    path('upload_view',views.upload_view, name='upload_view'),
 ]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

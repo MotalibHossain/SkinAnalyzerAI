@@ -335,69 +335,82 @@
                     <div class="left-section">
                         <h2 class="section-title">Upload Image</h2>
                         <div class="image-upload-container">
-                            <div class="image-upload">
-                                <i
-                                    class="fas fa-cloud-upload-alt upload-icon"
-                                ></i>
-                                <div class="upload-text">
-                                    <label for="file-upload" class="btn-file"
-                                        >Browse Files</label
-                                    >
-                                    <input
-                                        type="file"
-                                        id="file-upload"
-                                        accept="image/*"
+                            {% comment %} <form action="{%url 'ML_Models:upload_view'%}" method="POST" enctype="multipart/form-data"> {% endcomment %}
+                            <form  id="image-upload-form" data-url="{% url 'ML_Models:upload_view' %}" method="POST" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                <div class="image-upload">
+                                    <i
+                                        class="fas fa-cloud-upload-alt upload-icon"
+                                    ></i>
+                                    <div class="upload-text">
+                                        <label
+                                            for="file-upload"
+                                            class="btn-file"
+                                            >Browse Files</label
+                                        >
+                                        <input
+                                            type="file"
+                                            id="file-upload"
+                                            accept="image/*"
+                                            name="image"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div class="preview-container">
+                                    <h3>Selected Image</h3>
+                                    <img
+                                        class="preview-image"
+                                        src="/api/placeholder/300/300"
+                                        alt="Image preview"
                                     />
                                 </div>
-                            </div>
 
-                            <div class="preview-container">
-                                <h3>Selected Image</h3>
-                                <img
-                                    class="preview-image"
-                                    src="/api/placeholder/300/300"
-                                    alt="Image preview"
-                                />
-                            </div>
+                                {% comment %}
+                                <h3>Select Model</h3>
+                                <div class="model-selector">
+                                    <div class="model-option">
+                                        <h3>Random Forest</h3>
+                                    </div>
+                                    <div class="model-option">
+                                        <h3>SVM</h3>
+                                    </div>
+                                    <div class="model-option">
+                                        <h3>XGBoost</h3>
+                                    </div>
+                                    <div class="model-option active">
+                                        <h3>CNN</h3>
+                                    </div>
+                                    <div class="model-option">
+                                        <h3>ResNet</h3>
+                                    </div>
+                                    <div class="model-option">
+                                        <h3>EfficientNet</h3>
+                                    </div>
+                                </div>
+                                {% endcomment %}
 
-                            {% comment %} <h3>Select Model</h3>
-                            <div class="model-selector">
-                                <div class="model-option">
-                                    <h3>Random Forest</h3>
-                                </div>
-                                <div class="model-option">
-                                    <h3>SVM</h3>
-                                </div>
-                                <div class="model-option">
-                                    <h3>XGBoost</h3>
-                                </div>
-                                <div class="model-option active">
-                                    <h3>CNN</h3>
-                                </div>
-                                <div class="model-option">
-                                    <h3>ResNet</h3>
-                                </div>
-                                <div class="model-option">
-                                    <h3>EfficientNet</h3>
-                                </div>
-                            </div> {% endcomment %}
-
-                            <button class="btn btn-primary" id="classify-btn">
-                                Classify Image
-                            </button>
+                                <button
+                                    class="btn btn-primary"
+                                    id="classify-btn"
+                                    type="submit"
+                                >
+                                    Classify Image
+                                </button>
+                            </form>
                         </div>
                     </div>
 
                     <!-- Right Section: Results -->
                     <div class="right-section">
                         <h2 class="section-title">Classification Results</h2>
-                        <div class="results-section">
+                        <div class="results-section " id="classification-result">
                             <div class="result-item">
                                 <div class="result-label">
                                     <h3>Diagnosis:</h3>
                                 </div>
                                 <div class="result-value">
-                                    <p class="diagnosis-result">Melanoma</p>
+                                    <p class="diagnosis-result"></p>
                                 </div>
                             </div>
 
@@ -482,6 +495,7 @@
             </div>
         </div>
 
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
             // Simple script to handle image preview
             document
@@ -501,6 +515,96 @@
                         reader.readAsDataURL(e.target.files[0]);
                     }
                 });
+        </script>
+        
+
+        
+        
+        <script>
+            $('#image-upload-form').on('submit', function (e) {
+                e.preventDefault();
+                
+                var formData = new FormData(this);
+                const url = $(this).data('url');
+                
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    headers: {
+                        'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function (response) {
+                        // Build probability bars HTML
+                        let probBarsHTML = '';
+                        const sortedProbs = Object.entries(response.probabilities)
+                            .sort((a, b) => b[1] - a[1]);
+                        
+                        sortedProbs.forEach(([label, prob], index) => {
+                            const percent = Math.round(prob * 100);
+                            probBarsHTML += `
+                                <div class="prob-item">
+                                    <span class="prob-label">${label}</span>
+                                    <div class="prob-bar-container">
+                                        <div class="prob-bar" style="width:${percent}%"></div>
+                                    </div>
+                                    <span>${percent}%</span>
+                                </div>
+                            `;
+                        });
+                    
+                        // Update the results section
+                        $('#classification-result').html(`
+                            <div class="result-item">
+                                <div class="result-label"><h3>Diagnosis:</h3></div>
+                                <div class="result-value">
+                                    <p class="diagnosis-result">${response.result}</p>
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-label"><h3>Confidence:</h3></div>
+                                <div class="result-value">
+                                    <div class="confidence-bar-container">
+                                        <div class="confidence-bar" style="width:${Math.round(response.confidence * 100)}%"></div>
+                                    </div>
+                                    <p class="confidence-value">${Math.round(response.confidence * 100)}%</p>
+                                </div>
+                            </div>
+                            <div class="probability-distribution">
+                                <h3>Probability Distribution</h3>
+                                <div class="prob-bars">${probBarsHTML}</div>
+                            </div>
+                            <div class="model-performance">
+                                <h3>Model Performance Metrics</h3>
+                                <div class="metrics-container">
+                                    <div class="metric-card">
+                                        <h4>Accuracy</h4>
+                                        <p class="metric-value">92.4%</p>
+                                    </div>
+                                    <div class="metric-card">
+                                        <h4>Sensitivity</h4>
+                                        <p class="metric-value">89.7%</p>
+                                    </div>
+                                    <div class="metric-card">
+                                        <h4>Specificity</h4>
+                                        <p class="metric-value">94.2%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        
+                        // Update preview image
+                        $('.preview-image').attr('src', response.image_url);
+                    },
+                    error: function (xhr, status, error) {
+                        $('#classification-result').html(`<p style="color:red;">Error: ${error}</p>`);
+                    }
+                });
+            });
+            
         </script>
     </body>
 </html>

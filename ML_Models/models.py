@@ -7,4 +7,4 @@ class UploadedImage(models.Model):
     prediction = models.CharField(max_length=100, blank=True)
 
     def __str__(self) -> str:
-        return self.uploaded_at
+        return "tested image"

@@ -18,7 +18,6 @@ def index(request):
     return render(request, 'index.html')
 
 
-
 def preprocess_image(image_path):
     img = Image.open(image_path).resize((128, 128))  # Match training size
     img_array = np.array(img).flatten() / 255.0  # Normalize
@@ -30,15 +29,29 @@ def upload_view(request):
         # Save uploaded image
         skin_image = UploadedImage(image=request.FILES['image'])
         skin_image.save()
-        
+
         # Predict
         img_path = os.path.join(settings.MEDIA_ROOT, skin_image.image.name)
         result = skin_model.predict(img_path)
-        
+
         # Save result
         skin_image.prediction = result['prediction']
         skin_image.save()
-        
+
+        print({
+            'image': skin_image,
+            'result': result
+        })
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON response for AJAX
+            return JsonResponse({
+                'result': result['prediction'],
+                'confidence': result.get('confidence', 0),
+                'probabilities': result.get('probabilities', {}),
+                'image_url': skin_image.image.url
+            })
+
         return render(request, 'index.html', {
             'image': skin_image,
             'result': result
