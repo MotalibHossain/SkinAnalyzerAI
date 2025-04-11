@@ -7,6 +7,7 @@
 1. Clone/Download the project.  
 2. Go to the project folder where `manage.py` is located.  
 3. Create and activate a virtual environment.  
+	py -m venv { folder name }
 4. Run this command in the terminal: `pip install -r requirements.txt`  
 5. The above command will install all packages required to run the project.  
 6. Run `python manage.py migrate`  
